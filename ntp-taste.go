@@ -8,12 +8,15 @@ import (
     "net"
 
     "github.com/AstromechZA/ntp-taste/header"
+    "github.com/AstromechZA/ntp-taste/constants"
 )
 
 const usageString =
 `ntp-taste is a simple binary for demonstrating an NTP relationships
 
 `
+
+
 
 const ntpPort = 123
 
@@ -41,9 +44,10 @@ func mainInner() error {
 
     defer conn.Close()
 
-    buf := make([]byte, 48)
-    buf[0] = 0x1B
-    _, err = conn.Write(buf)
+    h := &header.RawHeader{Version: 3, Mode: constants.ModeClient}
+    buf, err := h.ToSlice()
+    if err != nil { return err }
+    _, err = conn.Write(*buf)
     if err != nil { return err }
 
     inbuf := make([]byte, 1024)
@@ -54,7 +58,7 @@ func mainInner() error {
     fmt.Printf("Bytes %x\n", inbuf[:n])
 
     headerContent := inbuf[:n]
-    h, err := header.ParseRaw(&headerContent)
+    h, err = header.ParseRaw(&headerContent)
     if err != nil { return err }
 
     fmt.Println(h)
