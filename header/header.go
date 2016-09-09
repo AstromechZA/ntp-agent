@@ -21,24 +21,6 @@ type RawHeader struct {
     TransmitTimestamp int64
 }
 
-
-/*
-2 bits --- LI
-3 bits --- VN
-3 bits --- Mode
-1 byte --- Stratum
-1 byte --- Poll
-1 byte --- Precision
-
-4 byte --- Root delay
-4 byte --- Root disperse
-4 byte --- ref id
-8 byte --- ref time
-8 byte --- origin time
-8 byte --- recv time
-8 byte --- trasmit time
-*/
-
 func (h *RawHeader) ToSlice() (*[]byte, error) {
     output := make([]byte, 48)
     err := h.IntoSlice(&output)
