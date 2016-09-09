@@ -6,6 +6,8 @@ import (
     "flag"
     "errors"
     "net"
+
+    "github.com/AstromechZA/ntp-taste/header"
 )
 
 const usageString =
@@ -50,6 +52,21 @@ func mainInner() error {
     fmt.Println("UDP Server", addr)
     fmt.Println("Received", n, "bytes")
     fmt.Printf("Bytes %x\n", inbuf[:n])
+
+    headerContent := inbuf[:n]
+    h, err := header.ParseRaw(&headerContent)
+    if err != nil { return err }
+
+    fmt.Println(h)
+
+    raw, err := h.ToSlice()
+    if err != nil { return err }
+    fmt.Printf("Bytes %x\n", *raw)
+
+    h2, err := header.ParseRaw(raw)
+    if err != nil { return err }
+
+    fmt.Println(h2)
 
     return err
 }
