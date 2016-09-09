@@ -3,6 +3,8 @@ package header
 import (
     "errors"
     "fmt"
+    "time"
+    "math"
 )
 
 type RawHeader struct {
@@ -170,4 +172,35 @@ func putInt64(output *[]byte, position int, data int64) error {
     outputData[position + 6] = byte((data >> 8) & 0xFF)
     outputData[position + 7] = byte(data & 0xFF)
     return nil
+}
+
+func ConvertNTPToSeconds(input int64) float64 {
+    // first convert to unsigned
+    uinput := uint64(input)
+
+    // get integral seconds
+    seconds := (uinput >> 32) & math.MaxUint32
+    // isolate fractions
+    fraction := (uinput & math.MaxUint32)
+    // convert into seconds
+    extra := float64(fraction) / float64(0x100000000)
+    accumulated := float64(seconds) + extra
+
+    // pull the MSB of the seconds
+    msb := seconds & 0x80000000
+
+    // combine with magic offset time
+    if msb == 0 {
+        return accumulated + 2085978496
+    }
+    return accumulated - 2208988800
+}
+
+func ConvertSecondsToTime(input float64) time.Time {
+    seconds, frac := math.Modf(math.Abs(input))
+    return time.Unix(int64(seconds), int64(frac * float64(1000000000)))
+}
+
+func ConvertNTPToTime(input int64) time.Time {
+    return ConvertSecondsToTime(ConvertNTPToSeconds(input))
 }

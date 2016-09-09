@@ -16,9 +16,30 @@ const usageString =
 
 `
 
-
-
 const ntpPort = 123
+
+func getNTPHeader(server string) (*header.RawHeader, error) {
+    svrAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", server, ntpPort))
+    if err != nil { return nil, err }
+
+    conn, err := net.DialUDP("udp", nil, svrAddr)
+    if err != nil { return nil, err }
+
+    defer conn.Close()
+
+    h := &header.RawHeader{Version: 3, Mode: constants.ModeClient}
+    buf, err := h.ToSlice()
+    if err != nil { return nil, err }
+    _, err = conn.Write(*buf)
+    if err != nil { return nil, err }
+
+    inbuf := make([]byte, 1024)
+    n, _, err := conn.ReadFromUDP(inbuf)
+    if err != nil { return nil, err }
+    headerContent := inbuf[:n]
+    return header.ParseRaw(&headerContent)
+}
+
 
 func mainInner() error {
 
@@ -36,43 +57,14 @@ func mainInner() error {
         return errors.New("Expected at least one upstream NTP server as an argument.")
     }
 
-    svrAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", flag.Args()[0], ntpPort))
-    if err != nil { return err }
+    for _, server := range flag.Args() {
+        h, err := getNTPHeader(server)
+        if err != nil { return err }
 
-    conn, err := net.DialUDP("udp", nil, svrAddr)
-    if err != nil { return err }
+        fmt.Println(header.ConvertNTPToTime(h.ReceiveTimestamp), header.ConvertNTPToTime(h.TransmitTimestamp))
+    }
 
-    defer conn.Close()
-
-    h := &header.RawHeader{Version: 3, Mode: constants.ModeClient}
-    buf, err := h.ToSlice()
-    if err != nil { return err }
-    _, err = conn.Write(*buf)
-    if err != nil { return err }
-
-    inbuf := make([]byte, 1024)
-    n, addr, err := conn.ReadFromUDP(inbuf)
-
-    fmt.Println("UDP Server", addr)
-    fmt.Println("Received", n, "bytes")
-    fmt.Printf("Bytes %x\n", inbuf[:n])
-
-    headerContent := inbuf[:n]
-    h, err = header.ParseRaw(&headerContent)
-    if err != nil { return err }
-
-    fmt.Println(h)
-
-    raw, err := h.ToSlice()
-    if err != nil { return err }
-    fmt.Printf("Bytes %x\n", *raw)
-
-    h2, err := header.ParseRaw(raw)
-    if err != nil { return err }
-
-    fmt.Println(h2)
-
-    return err
+    return nil
 }
 
 func main() {
