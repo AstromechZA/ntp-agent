@@ -7,19 +7,19 @@ import (
     "errors"
     "net"
 
-    "github.com/AstromechZA/ntp-taste/header"
-    "github.com/AstromechZA/ntp-taste/translation"
-    "github.com/AstromechZA/ntp-taste/constants"
+    "github.com/AstromechZA/ntp-agent/packet"
+    "github.com/AstromechZA/ntp-agent/translation"
+    "github.com/AstromechZA/ntp-agent/constants"
 )
 
 const usageString =
-`ntp-taste is a simple binary for demonstrating an NTP relationships
+`ntp-agent is a simple binary for demonstrating an NTP relationships
 
 `
 
 const ntpPort = 123
 
-func getNTPHeader(server string) (*header.RawHeader, error) {
+func getNTPHeader(server string) (*packet.RawPacket, error) {
     svrAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", server, ntpPort))
     if err != nil { return nil, err }
 
@@ -28,7 +28,7 @@ func getNTPHeader(server string) (*header.RawHeader, error) {
 
     defer conn.Close()
 
-    h := &header.RawHeader{Version: 4, Mode: constants.ModeClient}
+    h := &packet.RawPacket{Version: 4, Mode: constants.ModeClient}
     buf, err := h.ToSlice()
     if err != nil { return nil, err }
     _, err = conn.Write(*buf)
@@ -38,7 +38,7 @@ func getNTPHeader(server string) (*header.RawHeader, error) {
     n, _, err := conn.ReadFromUDP(inbuf)
     if err != nil { return nil, err }
     headerContent := inbuf[:n]
-    return header.ParseRaw(&headerContent)
+    return packet.ParseRaw(&headerContent)
 }
 
 

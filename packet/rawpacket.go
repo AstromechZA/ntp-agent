@@ -1,11 +1,11 @@
-package header
+package packet
 
 import (
     "errors"
     "fmt"
 )
 
-type RawHeader struct {
+type RawPacket struct {
     LeapIndicator byte
     Version byte
     Mode byte
@@ -38,13 +38,13 @@ type RawHeader struct {
 8 byte --- trasmit time
 */
 
-func (h *RawHeader) ToSlice() (*[]byte, error) {
+func (h *RawPacket) ToSlice() (*[]byte, error) {
     output := make([]byte, 48)
     err := h.IntoSlice(&output)
     return &output, err
 }
 
-func (h *RawHeader) IntoSlice(output *[]byte) error {
+func (h *RawPacket) IntoSlice(output *[]byte) error {
 
     outputData := *output
 
@@ -69,7 +69,7 @@ func (h *RawHeader) IntoSlice(output *[]byte) error {
     return nil
 }
 
-func ParseRaw(input *[]byte) (*RawHeader, error) {
+func ParseRaw(input *[]byte) (*RawPacket, error) {
 
     inputData := *input
 
@@ -79,7 +79,7 @@ func ParseRaw(input *[]byte) (*RawHeader, error) {
     }
 
     // build output structure
-    output := RawHeader{}
+    output := RawPacket{}
 
     // first byte
     b1 := inputData[0]
