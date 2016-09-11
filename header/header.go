@@ -3,12 +3,10 @@ package header
 import (
     "errors"
     "fmt"
-    "time"
-    "math"
 )
 
 type RawHeader struct {
-    Leap byte
+    LeapIndicator byte
     Version byte
     Mode byte
     Stratum byte
@@ -17,10 +15,10 @@ type RawHeader struct {
     RootDelay int32
     RootDispersion int32
     ReferenceID int32
-    ReferenceTimestamp int64
-    OriginateTimestamp int64
-    ReceiveTimestamp int64
-    TransmitTimestamp int64
+    ReferenceTimestamp uint64
+    OriginateTimestamp uint64
+    ReceiveTimestamp uint64
+    TransmitTimestamp uint64
 }
 
 /*
@@ -51,7 +49,7 @@ func (h *RawHeader) IntoSlice(output *[]byte) error {
     outputData := *output
 
     var b1 byte
-    b1 = b1 | ((h.Leap & 0x2) << 6)
+    b1 = b1 | ((h.LeapIndicator & 0x2) << 6)
     b1 = b1 | ((h.Version & 0x7) << 3)
     b1 = b1 | (h.Mode & 0x7)
 
@@ -63,10 +61,10 @@ func (h *RawHeader) IntoSlice(output *[]byte) error {
     if err := putInt32(output, 4, h.RootDelay); err != nil { return err }
     if err := putInt32(output, 8, h.RootDispersion); err != nil { return err }
     if err := putInt32(output, 12, h.ReferenceID); err != nil { return err }
-    if err := putInt64(output, 16, h.ReferenceTimestamp); err != nil { return err }
-    if err := putInt64(output, 24, h.OriginateTimestamp); err != nil { return err }
-    if err := putInt64(output, 32, h.ReceiveTimestamp); err != nil { return err }
-    if err := putInt64(output, 40, h.TransmitTimestamp); err != nil { return err }
+    if err := putUint64(output, 16, h.ReferenceTimestamp); err != nil { return err }
+    if err := putUint64(output, 24, h.OriginateTimestamp); err != nil { return err }
+    if err := putUint64(output, 32, h.ReceiveTimestamp); err != nil { return err }
+    if err := putUint64(output, 40, h.TransmitTimestamp); err != nil { return err }
 
     return nil
 }
@@ -85,7 +83,7 @@ func ParseRaw(input *[]byte) (*RawHeader, error) {
 
     // first byte
     b1 := inputData[0]
-    output.Leap = (b1 >> 6) & 0x2
+    output.LeapIndicator = (b1 >> 6) & 0x2
     output.Version = (b1 >> 3) & 0x7
     output.Mode = b1 & 0x7
 
@@ -102,13 +100,13 @@ func ParseRaw(input *[]byte) (*RawHeader, error) {
     if err != nil { return nil, err }
     output.ReferenceID, err = getInt32(input, 12)
     if err != nil { return nil, err }
-    output.ReferenceTimestamp, err = getInt64(input, 16)
+    output.ReferenceTimestamp, err = getUint64(input, 16)
     if err != nil { return nil, err }
-    output.OriginateTimestamp, err = getInt64(input, 24)
+    output.OriginateTimestamp, err = getUint64(input, 24)
     if err != nil { return nil, err }
-    output.ReceiveTimestamp, err = getInt64(input, 32)
+    output.ReceiveTimestamp, err = getUint64(input, 32)
     if err != nil { return nil, err }
-    output.TransmitTimestamp, err = getInt64(input, 40)
+    output.TransmitTimestamp, err = getUint64(input, 40)
     if err != nil { return nil, err }
 
     return &output, nil
@@ -174,33 +172,12 @@ func putInt64(output *[]byte, position int, data int64) error {
     return nil
 }
 
-func ConvertNTPToSeconds(input int64) float64 {
-    // first convert to unsigned
-    uinput := uint64(input)
-
-    // get integral seconds
-    seconds := (uinput >> 32) & math.MaxUint32
-    // isolate fractions
-    fraction := (uinput & math.MaxUint32)
-    // convert into seconds
-    extra := float64(fraction) / float64(0x100000000)
-    accumulated := float64(seconds) + extra
-
-    // pull the MSB of the seconds
-    msb := seconds & 0x80000000
-
-    // combine with magic offset time
-    if msb == 0 {
-        return accumulated + 2085978496
-    }
-    return accumulated - 2208988800
+func getUint64(input *[]byte, position int) (uint64, error) {
+    i, e := getInt64(input, position)
+    if e != nil { return 0, e }
+    return uint64(i), nil
 }
 
-func ConvertSecondsToTime(input float64) time.Time {
-    seconds, frac := math.Modf(math.Abs(input))
-    return time.Unix(int64(seconds), int64(frac * float64(1000000000)))
-}
-
-func ConvertNTPToTime(input int64) time.Time {
-    return ConvertSecondsToTime(ConvertNTPToSeconds(input))
+func putUint64(output *[]byte, position int, data uint64) error {
+    return putInt64(output, position, int64(data))
 }

@@ -8,6 +8,7 @@ import (
     "net"
 
     "github.com/AstromechZA/ntp-taste/header"
+    "github.com/AstromechZA/ntp-taste/translation"
     "github.com/AstromechZA/ntp-taste/constants"
 )
 
@@ -27,7 +28,7 @@ func getNTPHeader(server string) (*header.RawHeader, error) {
 
     defer conn.Close()
 
-    h := &header.RawHeader{Version: 3, Mode: constants.ModeClient}
+    h := &header.RawHeader{Version: 4, Mode: constants.ModeClient}
     buf, err := h.ToSlice()
     if err != nil { return nil, err }
     _, err = conn.Write(*buf)
@@ -61,7 +62,8 @@ func mainInner() error {
         h, err := getNTPHeader(server)
         if err != nil { return err }
 
-        fmt.Println(header.ConvertNTPToTime(h.ReceiveTimestamp), header.ConvertNTPToTime(h.TransmitTimestamp))
+        fmt.Println(h.ReceiveTimestamp)
+        fmt.Println(translation.ConvertNTPToTime(h.ReceiveTimestamp), translation.ConvertNTPToTime(h.TransmitTimestamp))
     }
 
     return nil
