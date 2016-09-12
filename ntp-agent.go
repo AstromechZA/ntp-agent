@@ -5,6 +5,7 @@ import (
     "fmt"
     "flag"
     "errors"
+    "time"
     "net"
 
     "github.com/AstromechZA/ntp-agent/packet"
@@ -19,7 +20,7 @@ const usageString =
 
 const ntpPort = 123
 
-func getNTPHeader(server string) (*packet.RawPacket, error) {
+func getNTPPacket(server string) (*packet.RawPacket, error) {
     svrAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", server, ntpPort))
     if err != nil { return nil, err }
 
@@ -28,7 +29,11 @@ func getNTPHeader(server string) (*packet.RawPacket, error) {
 
     defer conn.Close()
 
-    h := &packet.RawPacket{Version: 4, Mode: constants.ModeClient}
+    h := &packet.RawPacket{
+        Version: 4,
+        Mode: constants.ModeClient,
+        OriginateTimestamp: translation.ConvertTimeToNTP(time.Now()),
+    }
     buf, err := h.ToSlice()
     if err != nil { return nil, err }
     _, err = conn.Write(*buf)
@@ -38,9 +43,9 @@ func getNTPHeader(server string) (*packet.RawPacket, error) {
     n, _, err := conn.ReadFromUDP(inbuf)
     if err != nil { return nil, err }
     headerContent := inbuf[:n]
+
     return packet.ParseRaw(&headerContent)
 }
-
 
 func mainInner() error {
 
@@ -59,11 +64,20 @@ func mainInner() error {
     }
 
     for _, server := range flag.Args() {
-        h, err := getNTPHeader(server)
-        if err != nil { return err }
 
-        fmt.Println(h.ReceiveTimestamp)
-        fmt.Println(translation.ConvertNTPToTime(h.ReceiveTimestamp), translation.ConvertNTPToTime(h.TransmitTimestamp))
+        t1 := time.Now()
+        h, err := getNTPPacket(server)
+        if err != nil { return err }
+        t4 := time.Now()
+        t2 := translation.ConvertNTPToTime(h.ReceiveTimestamp)
+        t3 := translation.ConvertNTPToTime(h.TransmitTimestamp)
+
+        offset := (t2.Sub(t1) - t4.Sub(t3)) / 2
+        delay := t4.Sub(t1) - t3.Sub(t2)
+
+        fmt.Println(h)
+        fmt.Println(offset, delay)
+        fmt.Println(translation.ConvertNTPToTime(h.ReceiveTimestamp))
     }
 
     return nil

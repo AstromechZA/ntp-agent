@@ -130,7 +130,7 @@ func putInt32(output *[]byte, position int, data int32) error {
     outputData := *output
 
     if len(outputData) < position + 4 {
-        return fmt.Errorf("Buffer overflow cannot put 8 bytes @ %d", position)
+        return fmt.Errorf("Buffer overflow cannot put 4 bytes @ %d", position)
     }
 
     outputData[position] = byte((data >> 24) & 0xFF)
@@ -144,7 +144,7 @@ func getInt64(input *[]byte, position int) (int64, error) {
     inputData := *input
 
     if len(inputData) < position + 8 {
-        return 0, fmt.Errorf("Buffer overflow cannot get 4 bytes @ %d", position)
+        return 0, fmt.Errorf("Buffer overflow cannot get 8 bytes @ %d", position)
     }
 
     var a int64
