@@ -31,6 +31,11 @@ See www.ntp.org for a list of useful ntp servers to pull from.
 
 `
 
+// Version is the version string
+// format should be 'X.YZ'
+// Set this at build time using the -ldflags="-X main.Version=X.YZ"
+var Version = "<unofficial build>"
+
 const ntpPort = 123
 
 func getNTPPacket(server string) (*packet.RawPacket, error) {
@@ -74,6 +79,7 @@ func getNTPPacket(server string) (*packet.RawPacket, error) {
 func mainInner() error {
 	// some flag args
 	assumeYesFlag := flag.Bool("assume-yes", false, "Don't prompt for sync")
+    versionFlag := flag.Bool("version", false, "Print the version string")
 
 	// set a more verbose usage message.
 	flag.Usage = func() {
@@ -83,6 +89,13 @@ func mainInner() error {
 
 	// parse them
 	flag.Parse()
+
+    // check for the version option
+    if *versionFlag {
+        fmt.Println("Version: " + Version)
+        fmt.Println("Project: https://github.com/AstromechZA/ntp-agent")
+        return nil
+    }
 
 	// expect at least one time server
 	if flag.NArg() == 0 {
