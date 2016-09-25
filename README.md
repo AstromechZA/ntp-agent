@@ -33,3 +33,16 @@ Project: https://github.com/AstromechZA/ntp-agent
 At this point, the binary can be used to set the date and time. It does it in
 a fairly simple manner, none of the complex clock selection, clustering,
 etc. But it works pretty effectively so far.
+
+Example:
+
+```
+$ sudo ./ntp-agent 1.za.pool.ntp.org 2.za.pool.ntp.org 3.za.pool.ntp.org
+[sudo] password:
+Clock offset seems to be about -28.639491111s
+This would change the current time 2016-09-25 23:01:31.129115875 +0200 SAST -> 2016-09-25 23:01:02.489624764 +0200 SAST
+Is this ok? (yes/no)
+yes
+Attempting to set time..
+Sun Sep 25 23:01:04 SAST 2016
+```
